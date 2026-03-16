@@ -1,7 +1,6 @@
 <html> 
 <head>
-<script src='web3.min.js'></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
 <script type="text/javascript">
 window.addEventListener('load', async () => {
         if (window.ethereum) {
@@ -14,12 +13,13 @@ window.addEventListener('load', async () => {
 	let btn = document.getElementById("btn");
 	btn.addEventListener('click', btnClicked);
 });
+
 async function btnClicked() {
-	alert("btnClicked()");
-	window.accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-	const showAccount = document.querySelector('.showAccount');
-	showAccount.innerHTML = accounts[0];
-        var abiobj = [
+        window.accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        const showAccount = document.querySelector('.showAccount');
+        showAccount.innerHTML = accounts[0];
+
+	let abiobj = [
 	{
 		"inputs": [
 			{
@@ -105,14 +105,19 @@ async function btnClicked() {
 	}
 ];
 
-	var address = "0xFb7DdB9aBAD3Ae4cC5E9B437eFacc5443Bf1eAee";
-	window.web3 = new Web3(window.ethereum);
-	contractInstance = await new window.web3.eth.Contract(abiobj, address);
-	const value = await contractInstance.methods.counter().call();
+
+	let provider, signer, contract, userAddress
+
+	provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+
+	let contract_address = "0xa7B9b58F5dc4C9f07f8B4a504eaF7aA6A9b9C99a";
+	contract = new ethers.Contract(contract_address, abiobj, signer)
+
+	const value = await contract.counter();
 	alert(value);
-
 }
-
 </script>
 </head>
 

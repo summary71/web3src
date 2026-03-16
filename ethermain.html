@@ -1,11 +1,10 @@
 <html> 
 <head>
-<script src='web3.min.js'></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
 <script type="text/javascript">
-var accounts;
-var contractInstance;
-var resultbox;
+let accounts;
+let resultbox;
+let provider, contract, signer, userAddress;
 
 window.addEventListener('load', async () => {
         if (window.ethereum) {
@@ -31,64 +30,71 @@ window.addEventListener('load', async () => {
 	btn = document.getElementById("owner");
 	btn.addEventListener('click', ownerClicked);
 	resultbox = document.getElementById("resultbox");
+
 });
 
 async function setMsg2Clicked() {
-	if (contractInstance != null) {
-		try {
-			let valtxt = document.getElementById("msg2");
-			let val = valtxt.value;
-			let value = await contractInstance.methods.setMsg2(val).send({from:accounts[0]});
-			resultbox.innerHTML = JSON.stringify(value);
-		} catch (error) {
-			resultbox.innerHTML = JSON.stringify(error);
-		}
-	}
+  if (contract != null) {
+	  alert("hi");
+    try {
+      let valtxt = document.getElementById("msg2");
+      let val = valtxt.value;
+      let tx = await contract.setMsg2(val);
+      let receipt = await tx.wait(); // 트랜잭션 확인 대기
+      resultbox.innerHTML = JSON.stringify(receipt);
+    } catch {
+      resultbox.innerHTML = "Error Occured";
+    }
+  }
 }
 
+
 async function setCounterClicked() {
-	if (contractInstance != null) {
-		contractInstance.methods.setCounter().send({from:accounts[0]})
-		.on('receipt', function(receipt) {
-			resultbox.innerHTML = "receipt: " + JSON.stringify(receipt);
-		})
-		.on('confirmation', function(confirmationNumber, receipt) {
-			resultbox.innerHTML = "confirmation: " + confirmationNumber + " & " + JSON.stringify(receipt);
-		})
-		.on('transactionHash', function(transactionHash) {
-			resultbox.innerHTML = "transactionHash: " + transactionHash;
-		})
-		.on('error', function(error) {
-			resultbox.innerHTML = JSON.stringify(error);
-		}) ;
-	}
+    if (contract != null) {
+        try {
+            let tx = await contract.setCounter(); // 여기서 MetaMask 서명까지만 대기
+            resultbox.innerHTML = "transactionHash: " + tx.hash;
+
+            // await 없이 .then()으로 처리 → 함수가 바로 리턴됨
+            tx.wait().then((receipt) => {
+                resultbox.innerHTML = "receipt: " + JSON.stringify(receipt);
+            }).catch((error) => {
+                resultbox.innerHTML = "Error: " + error.message;
+            });
+
+            // 여기는 tx.wait() 끝나기 전에 바로 실행됨
+            console.log("함수 리턴됨, 트랜잭션 확인 대기 중...");
+
+        } catch (error) {
+            resultbox.innerHTML = "Error: " + error.message;
+        }
+    }
 }
 
 async function counterClicked() {
-	const value = await contractInstance.methods.counter().call();
+	const value = await contract.counter();
 	resultbox.innerHTML = value;
 }
 
 async function getMsg2Clicked() {
-	const value = await contractInstance.methods.getMsg2().call();
+	const value = await contract.getMsg2();
 	resultbox.innerHTML = value;
 }
 async function msg1Clicked() {
-	const value = await contractInstance.methods.msg1().call();
+	const value = await contract.msg1();
 	resultbox.innerHTML = value;
 }
 async function ownerClicked() {
-	const value = await contractInstance.methods.owner().call();
+	const value = await contract.owner();
 	resultbox.innerHTML = value;
 }
 
 async function btnClicked() {
-	alert("btnClicked()");
-	accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-	alert(accounts.length);
-	const showAccount = document.querySelector('.showAccount');
-	showAccount.innerHTML = accounts[0];
-var abiobj = [
+        accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        const showAccount = document.querySelector('.showAccount');
+        showAccount.innerHTML = accounts[0];
+
+	let abiobj = [
 	{
 		"inputs": [
 			{
@@ -174,22 +180,26 @@ var abiobj = [
 	}
 ];
 
-	var address = "0xFb7DdB9aBAD3Ae4cC5E9B437eFacc5443Bf1eAee";
-	window.web3 = new Web3(window.ethereum);
-	contractInstance = await new window.web3.eth.Contract(abiobj, address);
-	const value = await contractInstance.methods.counter().call();
+
+
+	provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+
+	let contract_address = "0xa7B9b58F5dc4C9f07f8B4a504eaF7aA6A9b9C99a";
+	contract = new ethers.Contract(contract_address, abiobj, signer)
+
+	const value = await contract.counter();
 	alert(value);
 }
-
 </script>
 </head>
 
 <body>
 <h1> Event Test </h1>
 <br/>
-<input type="button" id="btn" value="Connect to MetaMask">
+<input type="button" id="btn" value="Connect to Metamask">
 <h2>Account: <span class="showAccount"></span></h2>
-
 <input type="button" id="setMsg2" value="setMsg2()">
 <input type="text" id="msg2" value="">
 <br/>
@@ -204,6 +214,8 @@ var abiobj = [
 <input type="button" id="owner" value="owner">
 <br/>
 Result: <span id="resultbox"> </span>
-
 </body> 
 </html>
+
+
+

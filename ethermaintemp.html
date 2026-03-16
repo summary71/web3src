@@ -1,86 +1,209 @@
-<html>
+<html> 
 <head>
-<meta http-equiv="content-type" content="text/html; charset=utf-8">
-<script src="web3.js"> </script>
-<script> 
-	function setCounter() {
-		var Web3 = require("web3");	
-	}
-	var transactionApproval = true;
-	function validate() {
-		if (typeof web3 !== 'undefined'){
-			console.log('MetaMask is installed')
-			web3.eth.getAccounts(function(err, accounts){
-				if (err != null) {
-					console.log(err)
-				} else if (accounts.length === 0) {
-					console.log('MetaMask is locked')
-				} else {
-					console.log('MetaMask is unlocked')
-	
-					tokenInst.balanceOf(
-						web3.eth.accounts[0], 
-						function (error, result) {
+<script src='web3.min.js'></script>
 
-							if (!error && result) {
-								var balance = result.c[0];
-								if (balance < dappCost * (100000000)) {
-									console.log('MetaMask has insufficient balance')
-									return false;
-								}
-								console.log('MetaMask has balance')
-								if (transactionApproval == true ){
-									requestApproval();
-									transactionApproval = false;
-								}
-							} else {
-								console.error(error);
-							}
-							return false;
-						});
-				}
-			});
-		} else {
-			console.log('MetaMask is not installed')
+<script type="text/javascript">
+var accounts;
+var contractInstance;
+var resultbox;
+
+window.addEventListener('load', async () => {
+        if (window.ethereum) {
+                window.alert('Modern dapp browsers')
+        } else if (window.web3) {
+                alert('Legacy dapp browsers')
+        } else {
+                alert('Non-Ethereum browser detected. You should consider trying MetaMask!');
+        }
+	let btn = document.getElementById("btn");
+	btn.addEventListener('click', btnClicked);
+
+	btn = document.getElementById("setMsg2");
+	btn.addEventListener('click', setMsg2Clicked);
+	btn = document.getElementById("setCounter");
+	btn.addEventListener('click', setCounterClicked);
+	btn = document.getElementById("counter");
+	btn.addEventListener('click', counterClicked);
+	btn = document.getElementById("getMsg2");
+	btn.addEventListener('click', getMsg2Clicked);
+	btn = document.getElementById("msg1");
+	btn.addEventListener('click', msg1Clicked);
+	btn = document.getElementById("owner");
+	btn.addEventListener('click', ownerClicked);
+	resultbox = document.getElementById("resultbox");
+});
+
+async function setMsg2Clicked() {
+	if (contractInstance != null) {
+		try {
+			let valtxt = document.getElementById("msg2");
+			let val = valtxt.value;
+			let value = await contractInstance.methods.setMsg2(val).send({from:accounts[0]});
+			resultbox.innerHTML = JSON.stringify(value);
+		} catch (error) {
+			resultbox.innerHTML = JSON.stringify(error);
 		}
 	}
+}
 
-	// request approval from MetaMask user
-	function requestApproval() {
-		tokenInst.approve(
-			addrHOLD,
-			truePlanCost,
-			{ gasPrice: web3.toWei('50', 'gwei') },
-			function (error, result) {
-				if (!error && result) {
-					var data;
-					console.log('approval sent to network.');
-					var url = 'https://etherscan.io/tx/' + result;
-					var link = '<a href=\"" + 
-						url + 
-						"\" target=\"_blank\">View Transaction</a>';
-						console.log('waiting for approval ...');
-					data = {
-						txhash: result,
-						account_type: selectedPlanId,
-						txtype: 1, // Approval
-					};
-					apiService(data, '/transaction/create/', 'POST')
-					.done(function (response) {
-						location.href = response.tx_url;
-					});
-				} else {
-					console.error(error);
-					console.log('You rejected the transaction');
-				}
-		});
+async function setCounterClicked() {
+	if (contractInstance != null) {
+		contractInstance.methods.setCounter().send({from:accounts[0]})
+		.on('receipt', function(receipt) {
+			resultbox.innerHTML = "receipt: " + JSON.stringify(receipt);
+		})
+		.on('confirmation', function(confirmationNumber, receipt) {
+			resultbox.innerHTML = "confirmation: " + confirmationNumber + " & " + JSON.stringify(receipt);
+		})
+		.on('transactionHash', function(transactionHash) {
+			resultbox.innerHTML = "transactionHash: " + transactionHash;
+		})
+		.on('error', function(error) {
+			resultbox.innerHTML = JSON.stringify(error);
+		}) ;
 	}
+}
+
+async function counterClicked() {
+	const value = await contractInstance.methods.counter().call();
+	resultbox.innerHTML = value;
+}
+
+async function getMsg2Clicked() {
+	const value = await contractInstance.methods.getMsg2().call();
+	resultbox.innerHTML = value;
+}
+async function msg1Clicked() {
+	const value = await contractInstance.methods.msg1().call();
+	resultbox.innerHTML = value;
+}
+async function ownerClicked() {
+	const value = await contractInstance.methods.owner().call();
+	resultbox.innerHTML = value;
+}
+
+async function btnClicked() {
+	alert("btnClicked()");
+	accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+	alert(accounts.length);
+	const showAccount = document.querySelector('.showAccount');
+	showAccount.innerHTML = accounts[0];
+var abiobj = [
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_msg1",
+				"type": "string"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "counter",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getMsg2",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "msg1",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "setCounter",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "_msg2",
+				"type": "string"
+			}
+		],
+		"name": "setMsg2",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
+
+	var address = "0xFb7DdB9aBAD3Ae4cC5E9B437eFacc5443Bf1eAee";
+	window.web3 = new Web3(window.ethereum);
+	contractInstance = await new window.web3.eth.Contract(abiobj, address);
+	const value = await contractInstance.methods.counter().call();
+	alert(value);
+}
 
 </script>
 </head>
+
 <body>
+<h1> Event Test </h1>
+<br/>
+<input type="button" id="btn" value="Connect to MetaMask">
+<h2>Account: <span class="showAccount"></span></h2>
 
-<input type="button" value="Counter" onclick="setCounter()">
+<input type="button" id="setMsg2" value="setMsg2()">
+<input type="text" id="msg2" value="">
+<br/>
+<input type="button" id="setCounter" value="setCounter()">
+<br/>
+<input type="button" id="counter" value="counter">
+<br/>
+<input type="button" id="getMsg2" value="getMsg2">
+<br/>
+<input type="button" id="msg1" value="msg1">
+<br/>
+<input type="button" id="owner" value="owner">
+<br/>
+Result: <span id="resultbox"> </span>
 
-</body>
+</body> 
 </html>
