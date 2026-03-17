@@ -1,32 +1,24 @@
 
 <html>
 <head>
-<script src='web3.min.js'></script>
-<script type="text/javascript" src="abilist.js">  </script>      
-<script type="text/javascript"> 
-var accounts;
-var constructInstance;
-var resultbox;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
+<script type="text/javascript" src="abilist.js">  </script>
+<script type="text/javascript">
+let contract;
+let resultbox;
 
 window.addEventListener('load', nameregistry);
 
 async function nameregistry() {
   if (window.ethereum) {
-	window.web3 = new Web3(window.ethereum);
-        window.accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-	var address = "0x20b9c8A67007572Eb763CAa5cb3e77e195dABb8B";
-	contractInstance = await new window.web3.eth.Contract(nameregistryabi, address);
-
-  // Legacy dapp browsers...
-  } else if (window.web3) {
-    window.web3 = new Web3(web3.currentProvider);
-    // Acccounts always exposed
-//    web3.eth.sendTransaction({/* ... */});
-  }
-  // Non-dapp browsers...
-  else {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = await provider.getSigner();
+    var address = "0xd5fB9aa4ddFaD9E9deeb062a1938A96D17aC83Ea";
+    contract = new ethers.Contract(address, nameregistryabi, signer);
+  } else {
     console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
-    window.web3 = null
+    contract = null;
   }
   addEvtHandlers();
 }
@@ -62,13 +54,13 @@ function addEvtHandlers() {
 
 
 async function setattribute() {
-  if (contractInstance != null) {
+  if (contract != null) {
     try {
         let conname = document.getElementById("conname");
         let name = conname.value;
         let conattr = document.getElementById("conattr");
         let attr = conattr.value;
-	const value = await contractInstance.methods[this.id](name, attr).send({from:accounts[0]});
+	const value = await contract[this.id](name, attr);
 	resultbox.innerHTML = JSON.stringify(value);
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -78,13 +70,13 @@ async function setattribute() {
 }
 
 async function setAddr() {
-  if (contractInstance != null) {
+  if (contract != null) {
     try {
         let conname = document.getElementById("conname");
         let name = conname.value;
         let conattr = document.getElementById("conattr");
-        let address = web3.utils.toChecksumAddress(conattr.value);
-	const value = await contractInstance.methods.setAddr(name, address).send({from:accounts[0]});
+        let address = ethers.getAddress(conattr.value);
+	const value = await contract.setAddr(name, address);
 	resultbox.innerHTML = JSON.stringify(value);
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -94,11 +86,11 @@ async function setAddr() {
 }
 
 async function setoneval() {
-  if (contractInstance != null) {
+  if (contract != null) {
     try {
         let conname = document.getElementById("conname");
         let name = conname.value;
-	let value = await contractInstance.methods[this.id](name).send({from:accounts[0]});
+	let value = await contract[this.id](name);
 	if (value)
 		resultbox.innerHTML = JSON.stringify(value);
     } catch (error) {
@@ -110,11 +102,11 @@ async function setoneval() {
 
 
 async function oneargfunc() {
-  if (contractInstance != null) {
+  if (contract != null) {
     try {
         let conname = document.getElementById("conname");
         let name = conname.value;
-	const value = await contractInstance.methods[this.id](name).call();
+	const value = await contract[this.id](name);
 	resultbox.innerHTML = JSON.stringify(value);
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -124,10 +116,10 @@ async function oneargfunc() {
 }
 
 async function showvalues() {
-  if (contractInstance != null) {
+  if (contract != null) {
     try {
-	const value = await contractInstance.methods[this.id]().call();
-	resultbox.innerHTML = JSON.stringify(value);
+	const value = await contract[this.id]();
+	resultbox.innerHTML = JSON.stringify(value, (key, val) => typeof val === 'bigint' ? val.toString() : val);
     } catch (error) {
         resultbox.innerHTML = "error occured";
         console.log(error);
