@@ -1,49 +1,41 @@
 
 <html>
 <head>
-<script src='web3.min.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
 <script type="text/javascript" src="abilist.js">  </script>
-<script type="text/javascript"> 
+<script type="text/javascript">
 var accounts = null;
-var cfcontractInstance = null;
+var cfcontract = null;
 var resultbox = null;
+var provider, signer;
 
 window.addEventListener('load', crowdfund);
 
 async function crowdfund() {
   if (window.ethereum) {
 
-    window.accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    accounts = [await signer.getAddress()];
 
-    
-   
-    //var address = "0x20b9c8A67007572Eb763CAa5cb3e77e195dABb8B";
     getCrowdFundInstance();
 
-  // Legacy dapp browsers...
-  } else if (window.web3) {
-    window.web3 = new Web3(web3.currentProvider);
-    // Acccounts always exposed
-//    web3.eth.sendTransaction({/* ... */});
-  }
-  // Non-dapp browsers...
-  else {
+  } else {
     console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
-    window.web3 = null
   }
 }
 
 async function getCrowdFundInstance() {
-	var address = "0x20b9c8A67007572Eb763CAa5cb3e77e195dABb8B";	// address of nameregistry
-	window.web3 = new Web3(window.ethereum);
-	var namereg = await new window.web3.eth.Contract(nameregistryabi, address);
+	var address = "0xd5fB9aa4ddFaD9E9deeb062a1938A96D17aC83Ea";	// address of nameregistry
+	var namereg = new ethers.Contract(address, nameregistryabi, signer);
 	try {
-		address = await namereg.methods.getAddr("crowdfund").call();
-		if (address != "") {
-			cfcontractInstance = await new window.web3.eth.Contract(cfabi, address);
+		address = await namereg.getAddr("crowdfund");
+		if (address != "" && address != ethers.ZeroAddress) {
+			cfcontract = new ethers.Contract(address, cfabi, signer);
 			registerEventHandlers();
 			alert(address);
-		}	
+		}
 	} catch (error) {
 		console.log(error);
 	}
@@ -83,10 +75,11 @@ function registerEventHandlers() {
 }
 
 async function checkGoalReached() {
-  if (cfcontractInstance != null) {
+  if (cfcontract != null) {
     try {
-	let value = await cfcontractInstance.methods.checkGoalReached().send({from:accounts[0]});
-	resultbox.innerHTML = JSON.stringify(value);
+	let tx = await cfcontract.checkGoalReached();
+	let receipt = await tx.wait();
+	resultbox.innerHTML = JSON.stringify(receipt, (key, val) => typeof val === 'bigint' ? val.toString() : val);
 
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -97,12 +90,13 @@ async function checkGoalReached() {
 
 
 async function fund() {
-  if (cfcontractInstance != null) {
+  if (cfcontract != null) {
     try {
         let valtxt = document.getElementById("fundamt");
         let val = valtxt.value;
-	let value = await cfcontractInstance.methods.fund().send({from:accounts[0], value:val});
-	resultbox.innerHTML = JSON.stringify(value);
+	let tx = await cfcontract.fund({value: val});
+	let receipt = await tx.wait();
+	resultbox.innerHTML = JSON.stringify(receipt, (key, val) => typeof val === 'bigint' ? val.toString() : val);
 
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -113,12 +107,12 @@ async function fund() {
 
 
 async function investors() {
-  if (cfcontractInstance != null) {
+  if (cfcontract != null) {
     try {
         let valtxt = document.getElementById("investorid");
         let id = valtxt.value;
-	let value = await cfcontractInstance.methods.investors(id).call();
-	resultbox.innerHTML = JSON.stringify(value);
+	let value = await cfcontract.investors(id);
+	resultbox.innerHTML = JSON.stringify(value, (key, val) => typeof val === 'bigint' ? val.toString() : val);
 
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -128,16 +122,16 @@ async function investors() {
 }
 
 async function showvalues() {
-  if (cfcontractInstance != null) {
+  if (cfcontract != null) {
     try {
 	var deadline = this.id
 
-	let value = await cfcontractInstance.methods[this.id]().call();
+	let value = await cfcontract[this.id]();
 	if (deadline == "deadline") {
-		var date = new Date(parseInt(value) * 1000);
-		value = value + ": " + date.toString();
+		var date = new Date(parseInt(value.toString()) * 1000);
+		value = value.toString() + ": " + date.toString();
 	}
-	resultbox.innerHTML = JSON.stringify(value);
+	resultbox.innerHTML = JSON.stringify(value, (key, val) => typeof val === 'bigint' ? val.toString() : val);
 
     } catch (error) {
         resultbox.innerHTML = JSON.stringify(error);
