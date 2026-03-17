@@ -4,10 +4,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.15.0/ethers.umd.min.js"></script>
 <script type="text/javascript" src="abilist.js">  </script>
 <script type="text/javascript">
-var accounts = null;
-var cfcontract = null;
-var resultbox = null;
-var provider, signer;
+let accounts = null;
+let cfcontract = null;
+let resultbox = null;
+let provider, signer;
+
+function toJson(obj) {
+  return JSON.stringify(obj, (key, val) => typeof val === 'bigint' ? val.toString() : val);
+}
 
 window.addEventListener('load', crowdfund);
 
@@ -79,7 +83,7 @@ async function checkGoalReached() {
     try {
 	let tx = await cfcontract.checkGoalReached();
 	let receipt = await tx.wait();
-	resultbox.innerHTML = JSON.stringify(receipt, (key, val) => typeof val === 'bigint' ? val.toString() : val);
+	resultbox.innerHTML = toJson(receipt);
 
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -96,7 +100,7 @@ async function fund() {
         let val = valtxt.value;
 	let tx = await cfcontract.fund({value: val});
 	let receipt = await tx.wait();
-	resultbox.innerHTML = JSON.stringify(receipt, (key, val) => typeof val === 'bigint' ? val.toString() : val);
+	resultbox.innerHTML = toJson(receipt);
 
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -112,7 +116,7 @@ async function investors() {
         let valtxt = document.getElementById("investorid");
         let id = valtxt.value;
 	let value = await cfcontract.investors(id);
-	resultbox.innerHTML = JSON.stringify(value, (key, val) => typeof val === 'bigint' ? val.toString() : val);
+	resultbox.innerHTML = toJson(value);
 
     } catch (error) {
         resultbox.innerHTML = "error occured";
@@ -131,7 +135,7 @@ async function showvalues() {
 		var date = new Date(parseInt(value.toString()) * 1000);
 		value = value.toString() + ": " + date.toString();
 	}
-	resultbox.innerHTML = JSON.stringify(value, (key, val) => typeof val === 'bigint' ? val.toString() : val);
+	resultbox.innerHTML = toJson(value);
 
     } catch (error) {
         resultbox.innerHTML = JSON.stringify(error);
