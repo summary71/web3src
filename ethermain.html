@@ -35,7 +35,6 @@ window.addEventListener('load', async () => {
 
 async function setMsg2Clicked() {
   if (contract != null) {
-	  alert("hi");
     try {
       let valtxt = document.getElementById("msg2");
       let val = valtxt.value;
@@ -186,7 +185,7 @@ async function btnClicked() {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
 
-	let contract_address = "0xa7B9b58F5dc4C9f07f8B4a504eaF7aA6A9b9C99a";
+	let contract_address = "0xc05B8B31A0A31b00c3D24001dDB29BFA30306c0f";
 	contract = new ethers.Contract(contract_address, abiobj, signer)
 
 	const value = await contract.counter();
